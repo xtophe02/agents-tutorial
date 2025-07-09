@@ -1,4 +1,13 @@
-from agents import Agent, WebSearchTool, ModelSettings
+from agents import Agent, function_tool, ModelSettings
+from tavily import TavilyClient
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY")
+tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
 
 INSTRUCTIONS = (
     "You are a research assistant. Given a search term, you search the web for that term and "
@@ -8,10 +17,19 @@ INSTRUCTIONS = (
     "essence and ignore any fluff. Do not include any additional commentary other than the summary itself."
 )
 
+
+@function_tool
+def tavily_search(query: str) -> str:
+    """Search the web using Tavily and return a summary string."""
+    result = tavily_client.search(query=query)
+    # You may want to process result['results'] or result['answer'] depending on Tavily's response
+    return result.get("answer", "")
+
+
 search_agent = Agent(
     name="Search agent",
     instructions=INSTRUCTIONS,
-    tools=[WebSearchTool(search_context_size="low")],
+    tools=[tavily_search],
     model="gpt-4o-mini",
     model_settings=ModelSettings(tool_choice="required"),
 )
